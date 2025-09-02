@@ -15,11 +15,11 @@ interface ProductCardProps {
 }
 
 function availabilityMeta(stock: number): { label: string; className: string } {
-  if (stock <= 10) return { label: `Only ${stock} in stock!`, className: "text-red-600" };
-  if (stock > 10 && stock <= 30) return { label: "Low Availability", className: "text-yellow-600" };
-  if (stock <= 0) return { label: "Out of Stock", className: "text-italic text-gray-500" };
-  // Treat >30 as available; spec explicitly calls out >=50 but we generalize
-  return { label: "Available", className: "text-green-600" };
+    if (stock <= 0) return { label: "Out of Stock", className: "text-italic text-gray-500" };
+    if (stock <= 10) return { label: `Only ${stock} in stock!`, className: "text-red-600" };
+    if (stock > 10 && stock <= 30) return { label: "Low Availability", className: "text-yellow-600" };
+    // Treat >30 as available; spec explicitly calls out >=50 but we generalize
+    return { label: "Available", className: "text-green-600" };
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
