@@ -26,7 +26,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const availability = availabilityMeta(product.stock);
   return (
     <Link href={`/products/${product.id}`} className={cn("group", className)}>
-      <Card className="h-full flex flex-col group-hover:outline group-hover:outline-2 group-hover:outline-black">
+      <Card className="h-full flex flex-col group-hover:outline group-hover:outline-2 group-hover:outline-black overflow-hidden">
         {product.image && (
           <div className="relative w-full aspect-[4/3] overflow-hidden">
             <Image
