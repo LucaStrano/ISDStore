@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    # Default to localhost for local dev; Docker overrides via env vars (using JDBC URL format)
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/isdstore}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+  data:
+    redis:
+      # Default to localhost for local dev; Docker overrides via env vars
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-me}
+    accessTtlSeconds: 900
+    refreshTtlSeconds: 604800
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
