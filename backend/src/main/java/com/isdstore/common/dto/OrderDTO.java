@@ -1,0 +1,16 @@
+package com.isdstore.common.dto;
+
+import lombok.Data;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@Data
+public class OrderDTO {
+    private UUID id;
+    private UUID userId;
+    private List<CartItemDTO> items;
+    private Integer totalCents;
+    private String status;
+    private Instant createdAt;
+}
