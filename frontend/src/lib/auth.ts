@@ -64,3 +64,38 @@ export function getRoleFromAccessToken(): string | null {
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
+function isAbsoluteUrl(url: string) {
+  return /^https?:\/\//i.test(url);
+}
+
+export async function authFetch(input: string, init: RequestInit = {}) {
+  const token = getAccessToken();
+  const headers = new Headers(init.headers || {});
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  const url = isAbsoluteUrl(input) ? input : `${API_BASE_URL}${input}`;
+  return fetch(url, { ...init, headers });
+}
+
+export async function authJson<T = unknown>(
+  path: string,
+  opts?: { method?: string; body?: any; headers?: HeadersInit }
+): Promise<T> {
+  const method = opts?.method ?? "GET";
+  const hdrs = new Headers(opts?.headers || {});
+  if (!hdrs.has("Content-Type")) hdrs.set("Content-Type", "application/json");
+  const res = await authFetch(path, {
+    method,
+    headers: hdrs,
+    body: opts?.body !== undefined ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Request failed with ${res.status}`);
+  }
+  // If no content (204), return undefined as any
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
