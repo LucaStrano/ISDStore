@@ -6,6 +6,7 @@ export type AuthTokens = {
 };
 
 const STORAGE_KEY = "isdstore.auth";
+const PROFILE_KEY = "isdstore.profile";
 
 export function saveTokens(tokens: AuthTokens) {
   if (typeof window === "undefined") return;
@@ -30,6 +31,8 @@ export function clearTokens() {
   if (typeof window === "undefined") return;
   console.log("Clearing Tokens from Local Storage");
   localStorage.removeItem(STORAGE_KEY);
+  // Also clear profile info when logging out
+  try { localStorage.removeItem(PROFILE_KEY); } catch {}
   try { window.dispatchEvent(new Event("auth:changed")); } catch {}
 }
 
@@ -98,4 +101,25 @@ export async function authJson<T = unknown>(
   // If no content (204), return undefined as any
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+// Lightweight profile storage: currently just the user's email for greeting
+export function saveProfile(profile: { email: string }) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch {}
+  try { window.dispatchEvent(new Event("auth:changed")); } catch {}
+}
+
+export function getUserEmail(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(PROFILE_KEY);
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw) as { email?: string };
+    return obj.email ?? null;
+  } catch {
+    return null;
+  }
 }

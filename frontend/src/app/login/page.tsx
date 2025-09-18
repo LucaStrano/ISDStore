@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { API_BASE_URL, saveTokens } from "@/lib/auth";
+import { API_BASE_URL, saveTokens, saveProfile } from "@/lib/auth";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -27,6 +27,8 @@ export default function LoginPage() {
             }
             const data = (await res.json()) as { accessToken: string; refreshToken: string };
             saveTokens(data);
+            // Save email locally for greeting
+            saveProfile({ email });
             router.push("/");
             router.refresh();
         } catch (err) {
