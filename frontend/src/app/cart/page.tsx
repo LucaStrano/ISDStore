@@ -135,17 +135,19 @@ export default function CartPage() {
                         >
                           {item.product.title}
                         </Link>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="flex w-auto items-center">
+                          <div className="text-sm text-muted-foreground">
                           Unit: ${price.toFixed(2)}
+                          </div>
+                          <div className="ml-auto text-right font-semibold min-w-24">
+                          ${subtotal.toFixed(2)}
+                          </div>
+                        </div>
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                        Quantity: <span className="font-medium text-foreground">{item.quantity}</span>
                         </div>
                       </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        Quantity: <span className="font-medium text-foreground">{item.quantity}</span>
-                      </div>
-                    </div>
-                    <div className="text-right font-semibold min-w-24">
-                      ${subtotal.toFixed(2)}
-                    </div>
                   </div>
                 </CardContent>
               </Card>
