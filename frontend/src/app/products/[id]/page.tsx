@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { AddToCartButton } from "./add-to-cart-button";
 
 interface ProductPageProps { params: { id: string } }
 
@@ -79,12 +80,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                     <span className={`text-sm font-medium inline-flex items-center ${availability.className}`}>{availability.label}</span>
                 </div>
                 <div className="pt-2">
-                    <button
-                        className="bg-primary text-primary-foreground px-5 py-2 rounded-md text-sm font-medium shadow-sm hover:opacity-90 transition disabled:opacity-50"
-                        disabled={product.stock <= 0}
-                    >
-                        {product.stock > 0 ? "Add to cart" : "Out of stock"}
-                    </button>
+                    <AddToCartButton productId={product.id} disabled={product.stock <= 0} />
                 </div>
             </CardContent>
         </Card>
