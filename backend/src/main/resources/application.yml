@@ -27,3 +27,4 @@ logging:
   level:
     root: INFO
     org.springframework.security: INFO
+    com.isdstore: DEBUG
