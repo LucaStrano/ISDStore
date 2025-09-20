@@ -9,7 +9,7 @@ import java.util.UUID;
 public class OrderDTO {
     private UUID id;
     private UUID userId;
-    private List<CartItemDTO> items;
+    private List<OrderItemViewDTO> items;
     private Integer totalCents;
     private String status;
     private Instant createdAt;

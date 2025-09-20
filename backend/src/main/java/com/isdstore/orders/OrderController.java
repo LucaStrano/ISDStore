@@ -6,9 +6,12 @@ import com.isdstore.cart.CartService;
 import com.isdstore.common.dto.CartDTO;
 import com.isdstore.common.dto.CartItemDTO;
 import com.isdstore.common.dto.OrderDTO;
+import com.isdstore.common.dto.OrderItemViewDTO;
 import com.isdstore.common.entity.Order;
+import com.isdstore.common.entity.Product;
 import com.isdstore.common.entity.User;
 import com.isdstore.common.repo.OrderRepository;
+import com.isdstore.common.repo.ProductRepository;
 import com.isdstore.common.repo.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +34,14 @@ public class OrderController {
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
     private final CartService cartService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public OrderController(OrderRepository orderRepository, UserRepository userRepository, CartService cartService) {
+    public OrderController(OrderRepository orderRepository, UserRepository userRepository, ProductRepository productRepository, CartService cartService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
+        this.productRepository = productRepository;
         this.cartService = cartService;
     }
 
@@ -104,7 +109,20 @@ public class OrderController {
         dto.setUserId(o.getUser() != null ? o.getUser().getId() : null);
         try {
             List<CartItemDTO> items = objectMapper.readValue(o.getItems(), objectMapper.getTypeFactory().constructCollectionType(List.class, CartItemDTO.class));
-            dto.setItems(items);
+            // Map to view items with product titles
+            List<OrderItemViewDTO> viewItems = items.stream().map(it -> {
+                OrderItemViewDTO v = new OrderItemViewDTO();
+                v.setQuantity(it.getQuantity());
+                try {
+                    UUID pid = it.getProductId();
+                    Product p = productRepository.findById(pid).orElse(null);
+                    v.setTitle(p != null ? p.getTitle() : pid.toString());
+                } catch (Exception ex) {
+                    v.setTitle("Unknown product");
+                }
+                return v;
+            }).collect(Collectors.toList());
+            dto.setItems(viewItems);
         } catch (Exception e) {
             dto.setItems(Collections.emptyList());
         }
