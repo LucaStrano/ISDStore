@@ -159,4 +159,10 @@ public class CartService {
         }
         return total;
     }
+
+    public void clearCart(UUID userId) {
+        String k = key(userId);
+        Boolean existed = redis.delete(k);
+        log.info("Cleared cart in Redis key={} user={} existed={}", k, userId, existed);
+    }
 }

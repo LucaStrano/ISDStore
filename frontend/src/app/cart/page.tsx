@@ -5,6 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Progress } from "@/components/ui/progress";
 import { getAccessToken, authJson, clearTokens } from "@/lib/auth";
 
 // Types aligned with backend CartViewDTO
@@ -45,6 +56,11 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartViewDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -63,6 +79,33 @@ export default function CartPage() {
   }, [router]);
 
   const totalCents = cart?.totalCents ?? 0;
+
+  async function handleCheckout() {
+    setStatus("Starting checkout…");
+    setError(null);
+    setOrderId(null);
+    setProgress(10);
+    try {
+      // Small UX delay to show progress start
+      await new Promise((r) => setTimeout(r, 150));
+      setStatus("Creating order…");
+      setProgress(60);
+      const res = await authJson<{ id: string; totalCents: number; createdAt: string }>(
+        "/api/checkout",
+        { method: "POST" }
+      );
+      setOrderId(res.id);
+      setStatus("Finalizing…");
+      setProgress(90);
+      setProgress(100);
+      setStatus("Done! Your order was created.");
+    } catch (e: any) {
+      console.error("Checkout failed", e);
+      setError(e?.message || "Checkout failed");
+      setStatus("Something went wrong");
+      setProgress(0);
+    }
+  }
 
   if (loading) {
     return (
@@ -136,9 +179,62 @@ export default function CartPage() {
             <div className="text-lg font-semibold">
               Total: ${centsToDollars(totalCents).toFixed(2)}
             </div>
-            <Button asChild>
-              <Link href="/checkout">Proceed to checkout</Link>
-            </Button>
+            <Drawer open={open} onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) {
+                // When closing after a successful checkout, refresh cart then reset state
+                if (orderId) {
+                  void fetchCart().then((c) => setCart(c)).catch(() => {});
+                }
+                // reset drawer state
+                setProgress(0);
+                setStatus(null);
+                setError(null);
+                setOrderId(null);
+              }
+            }}>
+              <DrawerTrigger asChild>
+                <Button disabled={(cart?.items.length ?? 0) === 0} onClick={() => {
+                  setOpen(true);
+                  // kick off checkout as soon as the drawer opens
+                  setTimeout(() => { void handleCheckout(); }, 50);
+                }}>
+                  Proceed to checkout
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Checking out</DrawerTitle>
+                  <DrawerDescription>
+                    We’re creating your order and clearing your cart. Please don’t close this.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="px-4 pb-4">
+                  <Progress value={progress} />
+                  <div className="mt-2 text-sm">
+                    {status}
+                    {error ? (
+                      <span className="text-destructive ml-2">{error}</span>
+                    ) : null}
+                  </div>
+                  {orderId ? (
+                    <div className="mt-3 text-sm text-muted-foreground">
+                      Order ID: <span className="font-mono text-foreground">{orderId}</span>
+                    </div>
+                  ) : null}
+                </div>
+                <DrawerFooter>
+                  {orderId ? (
+                    <Button onClick={() => router.push("/orders")}>View orders</Button>
+                  ) : (
+                    <Button disabled>Processing…</Button>
+                  )}
+                  <DrawerClose asChild>
+                    <Button variant="outline">Close</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
           </div>
         </div>
       )}

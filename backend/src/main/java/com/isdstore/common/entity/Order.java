@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -22,7 +24,8 @@ public class Order {
     private User user;
 
     @Column(columnDefinition = "jsonb", nullable = false)
-    private String items; // JSON serialized list of items
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String items; // JSON serialized list of items, stored as jsonb
 
     @Column(nullable = false)
     private Integer totalCents;
