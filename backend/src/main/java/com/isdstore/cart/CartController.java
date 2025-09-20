@@ -2,6 +2,7 @@ package com.isdstore.cart;
 
 import com.isdstore.common.dto.CartDTO;
 import com.isdstore.common.dto.CartItemDTO;
+import com.isdstore.common.dto.CartViewDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -29,10 +30,10 @@ public class CartController {
     @GetMapping
     public ResponseEntity<?> getCart() {
         UUID userId = currentUserId();
-    log.info("GET /api/cart for user={}", userId);
-    CartDTO cart = cartService.getCart(userId);
-    log.info("Responding cart for user={} items={} totalCents={}", userId, cart.getItems().size(), cart.getTotalCents());
-        return ResponseEntity.ok(cart);
+        log.info("GET /api/cart for user={}", userId);
+        CartViewDTO view = cartService.getCartView(userId);
+        log.info("Responding cart view for user={} items={} totalCents={}", userId, view.getItems().size(), view.getTotalCents());
+        return ResponseEntity.ok(view);
     }
 
     @PostMapping("/items")
@@ -47,7 +48,8 @@ public class CartController {
         log.info("POST /api/cart/items user={} productId={} quantity={}", userId, item.getProductId(), item.getQuantity());
         CartDTO cart = cartService.addItem(userId, item.getProductId(), item.getQuantity());
         log.info("Item added. user={} newItemsCount={} totalCents={}", userId, cart.getItems().size(), cart.getTotalCents());
-        return ResponseEntity.ok(cart);
+        CartViewDTO view = cartService.getCartView(userId);
+        return ResponseEntity.ok(view);
     }
 
     @DeleteMapping("/items/{productId}")
@@ -58,7 +60,8 @@ public class CartController {
             log.info("DELETE /api/cart/items/{} user={}", pid, userId);
             CartDTO cart = cartService.removeItem(userId, pid);
             log.info("Item removed. user={} newItemsCount={} totalCents={}", userId, cart.getItems().size(), cart.getTotalCents());
-            return ResponseEntity.ok(cart);
+            CartViewDTO view = cartService.getCartView(userId);
+            return ResponseEntity.ok(view);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid productId");
         }

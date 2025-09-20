@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.isdstore.common.dto.CartDTO;
 import com.isdstore.common.dto.CartItemDTO;
 import com.isdstore.common.entity.Product;
+import com.isdstore.common.dto.CartViewDTO;
+import com.isdstore.common.dto.CartViewItemDTO;
+import com.isdstore.common.dto.ProductDTO;
 import com.isdstore.common.repo.ProductRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +96,42 @@ public class CartService {
         dto.setItems(items);
         dto.setTotalCents(computeTotalCents(items));
         return dto;
+    }
+
+    public CartViewDTO getCartView(UUID userId) {
+        CartDTO raw = getCart(userId);
+        List<CartViewItemDTO> viewItems = new ArrayList<>();
+        int total = 0;
+        for (CartItemDTO it : raw.getItems()) {
+            if (it.getProductId() == null || it.getQuantity() == null) continue;
+            UUID pid = it.getProductId();
+            int qty = Math.max(0, it.getQuantity());
+            Product p = productRepository.findById(pid).orElse(null);
+            if (p == null) {
+                log.warn("Product {} referenced in cart for user {} not found; skipping", pid, userId);
+                continue;
+            }
+            int price = p.getPriceCents() == null ? 0 : p.getPriceCents();
+            int itemTotal = price * qty;
+            total += itemTotal;
+            ProductDTO pdto = new ProductDTO();
+            pdto.setId(p.getId());
+            pdto.setTitle(p.getTitle());
+            pdto.setDescription(p.getDescription());
+            pdto.setPriceCents(price);
+            pdto.setImage(p.getImage());
+            pdto.setStock(p.getStock());
+            CartViewItemDTO vi = new CartViewItemDTO();
+            vi.setProduct(pdto);
+            vi.setQuantity(qty);
+            vi.setItemTotalCents(itemTotal);
+            viewItems.add(vi);
+        }
+        CartViewDTO view = new CartViewDTO();
+        view.setItems(viewItems);
+        view.setTotalCents(total);
+        log.info("Built CartView for user={} items={} totalCents={}", userId, viewItems.size(), total);
+        return view;
     }
 
     private void persist(UUID userId, List<CartItemDTO> items) {
