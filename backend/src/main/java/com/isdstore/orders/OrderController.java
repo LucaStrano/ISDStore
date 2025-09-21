@@ -19,8 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +48,7 @@ public class OrderController {
     }
 
     @PostMapping("/checkout")
+    @Transactional
     public ResponseEntity<?> checkout() {
         UUID userId = currentUserId();
         log.info("POST /api/checkout user={}", userId);
@@ -60,18 +63,56 @@ public class OrderController {
             return ResponseEntity.badRequest().body("User not found");
         }
 
+        // Adjust quantities based on available stock and compute total
+        List<CartItemDTO> adjusted = new ArrayList<>();
+        int totalCents = 0;
+        for (CartItemDTO it : cart.getItems()) {
+            if (it.getProductId() == null || it.getQuantity() == null) continue;
+            UUID pid = it.getProductId();
+            int requested = Math.max(0, it.getQuantity());
+            if (requested == 0) continue;
+
+            Product p = productRepository.findById(pid).orElse(null);
+            if (p == null) {
+                log.warn("Product {} in cart for user {} not found; skipping", pid, userId);
+                continue;
+            }
+            int available = Math.max(0, p.getStock() == null ? 0 : p.getStock());
+            int price = Math.max(0, p.getPriceCents() == null ? 0 : p.getPriceCents());
+            int qtyToBuy = Math.min(requested, available);
+            if (qtyToBuy <= 0) {
+                log.info("Product {} has no stock; requested={} available=0 user={}", pid, requested, userId);
+                continue;
+            }
+
+            // Decrement stock
+            p.setStock(available - qtyToBuy);
+            productRepository.save(p);
+
+            CartItemDTO adj = new CartItemDTO();
+            adj.setProductId(pid);
+            adj.setQuantity(qtyToBuy);
+            adjusted.add(adj);
+            totalCents += price * qtyToBuy;
+        }
+
+        if (adjusted.isEmpty()) {
+            log.warn("Checkout found no available items for user={}", userId);
+            return ResponseEntity.badRequest().body("No items available in stock");
+        }
+
         String itemsJson;
         try {
-            itemsJson = objectMapper.writeValueAsString(cart.getItems());
+            itemsJson = objectMapper.writeValueAsString(adjusted);
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize order items for user {}: {}", userId, e.getMessage());
+            log.error("Failed to serialize adjusted order items for user {}: {}", userId, e.getMessage());
             return ResponseEntity.internalServerError().body("Failed to create order");
         }
 
         Order order = new Order();
         order.setUser(userOpt.get());
         order.setItems(itemsJson);
-        order.setTotalCents(cart.getTotalCents());
+        order.setTotalCents(totalCents);
         order.setStatus("completed");
 
         Order saved = orderRepository.save(order);
