@@ -142,7 +142,7 @@ export default function AdminPanelPage() {
                 className="w-full border rounded-md px-3 py-2"
                 value={form.image}
                 onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
-                placeholder="https://example.com/photo.jpg"
+                placeholder="https://placehold.co/600x450/png?text=ItemText"
               />
             </div>
 
