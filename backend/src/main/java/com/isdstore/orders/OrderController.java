@@ -106,7 +106,13 @@ public class OrderController {
     private OrderDTO toDto(Order o) {
         OrderDTO dto = new OrderDTO();
         dto.setId(o.getId());
-        dto.setUserId(o.getUser() != null ? o.getUser().getId() : null);
+        if (o.getUser() != null) {
+            dto.setUserId(o.getUser().getId());
+            dto.setUserEmail(o.getUser().getEmail());
+        } else {
+            dto.setUserId(null);
+            dto.setUserEmail(null);
+        }
         try {
             List<CartItemDTO> items = objectMapper.readValue(o.getItems(), objectMapper.getTypeFactory().constructCollectionType(List.class, CartItemDTO.class));
             // Map to view items with product titles

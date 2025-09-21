@@ -9,6 +9,7 @@ import java.util.UUID;
 public class OrderDTO {
     private UUID id;
     private UUID userId;
+    private String userEmail;
     private List<OrderItemViewDTO> items;
     private Integer totalCents;
     private String status;

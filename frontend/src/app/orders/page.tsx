@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { authJson, clearTokens, getAccessToken } from "@/lib/auth";
+import { authJson, clearTokens, getAccessToken, getRoleFromAccessToken } from "@/lib/auth";
+import { formatCents } from "@/lib/utils";
 
 // Types aligned with backend OrderDTO and CartItemDTO
 type OrderItemViewDTO = {
@@ -13,14 +14,15 @@ type OrderItemViewDTO = {
 type OrderDTO = {
   id: string;
   userId: string;
+  userEmail?: string | null;
   items: OrderItemViewDTO[];
   totalCents: number;
   status: string; // "completed"
   createdAt: string; // ISO date string
 };
 
-async function fetchOrders(): Promise<OrderDTO[]> {
-  return await authJson<OrderDTO[]>("/api/orders");
+async function fetchOrders(isAdmin: boolean): Promise<OrderDTO[]> {
+  return await authJson<OrderDTO[]>(isAdmin ? "/api/admin/orders" : "/api/orders");
 }
 
 export default function OrdersPage() {
@@ -28,6 +30,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderDTO[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -35,7 +38,10 @@ export default function OrdersPage() {
       router.push("/login");
       return;
     }
-    fetchOrders()
+    const role = getRoleFromAccessToken();
+    const admin = role === "admin" || role === "ADMIN";
+    setIsAdmin(admin);
+    fetchOrders(admin)
       .then((o) => setOrders(o))
       .catch((err) => {
         console.error("OrdersPage: failed to fetch orders", err);
@@ -59,10 +65,10 @@ export default function OrdersPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">My Orders</h1>
+      <h1 className="text-2xl font-bold mb-6">{isAdmin ? "All Orders" : "My Orders"}</h1>
 
       {orders.length === 0 ? (
-        <p className="text-muted-foreground">You have no orders yet.</p>
+        <p className="text-muted-foreground">{isAdmin ? "No orders found." : "You have no orders yet."}</p>
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
@@ -70,12 +76,20 @@ export default function OrdersPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-4">
                   <CardTitle className="text-xl">Order {order.id}</CardTitle>
-                  <span className="text-sm font-medium text-green-600">
-                    {order.status}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">Total: {formatCents(order.totalCents)}</span>
+                    <span className="text-sm font-medium text-green-600">
+                      {order.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Placed on {new Date(order.createdAt).toLocaleDateString()}
+                <div className="text-sm text-muted-foreground space-y-0.5">
+                  <div>Placed on {new Date(order.createdAt).toLocaleDateString()}</div>
+                  {isAdmin && (
+                    <div>
+                      By {order.userEmail || order.userId}
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
